@@ -2,7 +2,7 @@
 // patterns/index.js
 export { default as goldenFrame } from './patterns/goldenFrame.js'
 export { default as silverFrame } from './patterns/silverFrame.js'
-export { default as horizontalGrille } from '.0patterns/horizontalGrille.js'
+export { default as horizontalGrille } from './patterns/horizontalGrille.js'
 export { default as verticalGrille } from './patterns/verticalGrille.js'
 export { default as gridGrille } from './patterns/gridGrille.js'
 export { default as diagonalGrille } from './patterns/diagonalGrille.js'
