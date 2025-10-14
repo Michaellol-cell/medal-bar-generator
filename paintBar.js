@@ -1,13 +1,17 @@
 // paintBar.js
-import {
-  goldenFrame,
-  silverFrame,
-  horizontalGrille,
-  verticalGrille,
-  gridGrille,
-  diagonalGrille,
-  devices
-} from './patterns/index.js'
+// patterns/index.js
+export { default as goldenFrame } from '.patterns/goldenFrame.js'
+export { default as silverFrame } from '.patterns/silverFrame.js'
+export { default as horizontalGrille } from '.patterns/horizontalGrille.js'
+export { default as verticalGrille } from '.patterns/verticalGrille.js'
+export { default as gridGrille } from '.patterns/gridGrille.js'
+export { default as diagonalGrille } from '.patterns/diagonalGrille.js'
+export { default as devices } from '.patterns/devices.js'
+
+// also export other patterns you already had, e.g. rectangles/palettes etc.
+// export { default as randomSolidRectangles } from './randomSolidRectangles.js'
+// ...
+
 import prng from './prng/index.js'
 
 /**
