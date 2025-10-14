@@ -1,12 +1,4 @@
-import { 
-  goldenFrame, 
-  silverFrame, 
-  horizontalGrille, 
-  verticalGrille, 
-  gridGrille, 
-  diagonalGrille, 
-  devices 
-} from './patterns/index.js'
+import { goldenFrame, silverFrame, horizontalGrille, verticalGrille, gridGrille, diagonalGrille, devices } from './patterns/index.js'
 import prng from './prng/index.js'
 
 const createBarCanvas = () => {
@@ -23,38 +15,60 @@ const clearCanvas = canvas => {
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 }
 
-// paintBar returns a function that paints a bar; keeps same signature you had
+/**
+ * Choose a grille type based on weighted probabilities.
+ * Adjust these weights to taste. They should sum to 1 (not required, we normalize).
+ */
+const pickGrille = () => {
+  const weights = {
+    horizontal: 0.5,
+    vertical:   0.2,
+    grid:       0.2,
+    diagonal:   0.1
+  }
+
+  // normalize and pick
+  const total = Object.values(weights).reduce((s, w) => s + w, 0)
+  let r = prng() * total
+  for (const [key, w] of Object.entries(weights)) {
+    if (r <= w) return key
+    r -= w
+  }
+  return 'horizontal'
+}
+
 const paintBar = pattern => ({ canvas, numberOfRectangles } = {}) => {
   canvas = canvas || createBarCanvas()
 
   clearCanvas(canvas)
 
-  // draw the main pattern (keeps the same call you already used)
+  // base pattern (your existing pattern function)
   pattern(canvas, numberOfRectangles)
 
-  // always add the horizontal grille
-  horizontalGrille(canvas)
-
-  // add one extra grille variant sometimes, for variety
-  const choice = prng() // 0..1
-  if (choice <= 0.18) {
-    // small chance to add vertical bars
-    verticalGrille(canvas)
-  } else if (choice <= 0.36) {
-    // another small chance to add a grid (crosshatch)
-    gridGrille(canvas)
-  } else if (choice <= 0.54) {
-    // diagonal for drama
-    diagonalGrille(canvas)
+  // probabilistic grille selection (replaces the always-horizontal behaviour)
+  const grilleType = pickGrille()
+  switch (grilleType) {
+    case 'vertical':
+      verticalGrille(canvas)
+      break
+    case 'grid':
+      gridGrille(canvas)
+      break
+    case 'diagonal':
+      diagonalGrille(canvas)
+      break
+    case 'horizontal':
+    default:
+      horizontalGrille(canvas)
+      break
   }
-  // else: no extra grille — keep only horizontal
 
-  // frames and devices (unchanged probabilities from your code)
+  // frames / devices (kept your original chances)
   if (prng() <= 0.1) {
     goldenFrame(canvas)
   }
 
-  if (prng() <= 0.1) {
+  if (prng() <= 0.1) { // or a different chance for silver
     silverFrame(canvas)
   }
 
