@@ -1,4 +1,4 @@
-import { goldenFrame, silverFrame, horizontalGrille, devices } from './patterns/index.js'
+import { goldenFrame, silverFrame, horizontalGrille, verticalGrille, gridGrille, devices } from './patterns/index.js'
 import prng from './prng/index.js'
 
 const createBarCanvas = () => {
