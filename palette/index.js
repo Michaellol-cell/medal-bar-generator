@@ -45,5 +45,4 @@ export const getRandomColor = (palette) => {
 
 // uniformly sample a color directly from full 24-bit space (no array)
 export const getRandomColorFromSpace = () =>
-  color
-FromIndex(Math.floor(prng() * MAX_COLOR_INDEX))
+  colorFromIndex(Math.floor(prng() * MAX_COLOR_INDEX))
