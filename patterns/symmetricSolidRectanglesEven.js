@@ -1,7 +1,22 @@
 import { getRandomColor, selectPalette } from '../palette/index.js'
 import prng from '../prng/index.js'
+import Color from 'colorjs.io'
 
-const symmetricSolidRectanglesEven = (canvas, numberOfPairs) => {
+// Convert ProPhoto RGB [0-1 floats] to sRGB [0-255 integers] for canvas
+const prophotoToSRGB = ([r, g, b]) => {
+  const col = new Color('prophoto-rgb', [r, g, b])
+  const srgb = col.to('srgb').coords
+  return srgb.map(v => Math.round(Math.max(0, Math.min(1, v)) * 255))
+}
+
+/**
+ * Draw symmetric vertical bands (even count) with mirrored colors
+ * 
+ * @param {HTMLCanvasElement} canvas - The target canvas
+ * @param {number} numberOfPairs - Number of mirrored pairs (total bands = pairs * 2)
+ * @param {object} paletteOpts - Options to pass to selectPalette (LRange, cMax, etc.)
+ */
+const symmetricSolidRectanglesEven = (canvas, numberOfPairs, paletteOpts = {}) => {
   const ctx = canvas.getContext('2d')
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
@@ -18,11 +33,15 @@ const symmetricSolidRectanglesEven = (canvas, numberOfPairs) => {
   const widths = new Array(totalBands).fill(base)
   for (let i = 0; i < remainder; i++) widths[i]++
 
-  const palette = selectPalette(Math.max(3, totalBands))
+  // Get ProPhoto colors and convert to sRGB
+  const prophotoColors = selectPalette(Math.max(3, totalBands), paletteOpts)
+  const palette = prophotoColors.map(prophotoToSRGB)
 
   // draw mirrored pairs using integer positions
   for (let i = 0; i < pairs; i++) {
-    const [r, g, b] = getRandomColor(palette)
+    const prophotoColor = getRandomColor(prophotoColors, paletteOpts)
+    const [r, g, b] = prophotoToSRGB(prophotoColor)
+    
     // left index = i
     let xLeft = 0
     for (let j = 0; j < i; j++) xLeft += widths[j]
@@ -38,9 +57,7 @@ const symmetricSolidRectanglesEven = (canvas, numberOfPairs) => {
     ctx.fillRect(xRight, 0, wRight, canvas.height)
   }
 
-  // Note: previously you left remainder pixels 'as a gap' — now widths[] accounts for remainder.
   return { type: 'symmetric-even', pairs, bandWidths: widths }
 }
 
 export default symmetricSolidRectanglesEven
-      
