@@ -56,24 +56,28 @@ const randomSolidRectangles = (canvas, options = {}) => {
 
   // DRAW FUNCTIONS --------------------------------------------------------
   const drawHorizontal = () => {
-    const rectH = Math.round(canvas.height / n)
+    const rectH = Math.floor(canvas.height / n)
     for (let i = 0; i < n; i++) {
       const [r, g, b] = palette[i % palette.length]
       ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`
       const y = i * rectH
-      ctx.fillRect(0, y, canvas.width, rectH)
-      if (edge) strokeEdge(0, y, canvas.width, rectH)
+      // Last rectangle extends to bottom edge to fill any gap
+      const height = (i === n - 1) ? canvas.height - y : rectH
+      ctx.fillRect(0, y, canvas.width, height)
+      if (edge) strokeEdge(0, y, canvas.width, height)
     }
   }
 
   const drawVertical = () => {
-    const rectW = Math.round(canvas.width / n)
+    const rectW = Math.floor(canvas.width / n)
     for (let i = 0; i < n; i++) {
       const [r, g, b] = palette[i % palette.length]
       ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`
       const x = i * rectW
-      ctx.fillRect(x, 0, rectW, canvas.height)
-      if (edge) strokeEdge(x, 0, rectW, canvas.height)
+      // Last rectangle extends to right edge to fill any gap
+      const width = (i === n - 1) ? canvas.width - x : rectW
+      ctx.fillRect(x, 0, width, canvas.height)
+      if (edge) strokeEdge(x, 0, width, canvas.height)
     }
   }
 
@@ -85,23 +89,27 @@ const randomSolidRectangles = (canvas, options = {}) => {
     const hPalette = selectPalette(Math.max(1, hCount))
 
     // vertical bands
-    const rectW = Math.round(canvas.width / vCount)
+    const rectW = Math.floor(canvas.width / vCount)
     for (let i = 0; i < vCount; i++) {
       const [r, g, b] = vPalette[i % vPalette.length]
       ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`
       const x = i * rectW
-      ctx.fillRect(x, 0, rectW, canvas.height)
-      if (edge) strokeEdge(x, 0, rectW, canvas.height)
+      // Last vertical band extends to right edge
+      const width = (i === vCount - 1) ? canvas.width - x : rectW
+      ctx.fillRect(x, 0, width, canvas.height)
+      if (edge) strokeEdge(x, 0, width, canvas.height)
     }
 
     // horizontal bands on top (they overlay but are full bands — literal ribbon intersections)
-    const rectH = Math.round(canvas.height / hCount)
+    const rectH = Math.floor(canvas.height / hCount)
     for (let j = 0; j < hCount; j++) {
       const [r, g, b] = hPalette[j % hPalette.length]
       ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`
       const y = j * rectH
-      ctx.fillRect(0, y, canvas.width, rectH)
-      if (edge) strokeEdge(0, y, canvas.width, rectH)
+      // Last horizontal band extends to bottom edge
+      const height = (j === hCount - 1) ? canvas.height - y : rectH
+      ctx.fillRect(0, y, canvas.width, height)
+      if (edge) strokeEdge(0, y, canvas.width, height)
     }
   }
 
@@ -118,8 +126,8 @@ const randomSolidRectangles = (canvas, options = {}) => {
 
     // draw tall vertical bands in rotated space that will appear diagonal on screen
     for (let i = -Math.round(diag); i < Math.round(diag); i += bandWidth) {
-      const idx = Math.abs(i / bandWidth) % palette.length
-      const [r, g, b] = palette[Math.abs(i / bandWidth) % palette.length]
+      const idx = Math.abs(Math.floor(i / bandWidth)) % palette.length
+      const [r, g, b] = palette[idx]
       ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`
       // rectangle wide = bandWidth, tall enough to cover rotated canvas
       ctx.fillRect(i, -diag, bandWidth, diag * 2)
@@ -159,4 +167,3 @@ const randomSolidRectangles = (canvas, options = {}) => {
 }
 
 export default randomSolidRectangles
-  
