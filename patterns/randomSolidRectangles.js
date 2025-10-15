@@ -1,5 +1,13 @@
-    import { getRandomColor, selectPalette } from '../palette/index.js'
+import { getRandomColor, selectPalette } from '../palette/index.js'
 import prng from '../prng/index.js'
+import Color from 'colorjs.io'
+
+// Convert ProPhoto RGB [0-1 floats] to sRGB [0-255 integers] for canvas
+const prophotoToSRGB = ([r, g, b]) => {
+  const col = new Color('prophoto-rgb', [r, g, b])
+  const srgb = col.to('srgb').coords
+  return srgb.map(v => Math.round(Math.max(0, Math.min(1, v)) * 255))
+}
 
 /**
  * Draw literal ribbon bands across a canvas in different layouts:
@@ -11,6 +19,7 @@ import prng from '../prng/index.js'
  *  - numberOfRectangles: integer (optional)
  *  - edge: boolean (default true) — draw a subtle edge stroke on each ribbon
  *  - alpha: number (0..1) default 1 — opacity for fills
+ *  - paletteOpts: options to pass to selectPalette (LRange, cMax, etc.)
  */
 const randomSolidRectangles = (canvas, options = {}) => {
   const ctx = canvas.getContext('2d')
@@ -21,6 +30,7 @@ const randomSolidRectangles = (canvas, options = {}) => {
     weights = { horizontal: 1, vertical: 1, grid: 0.6, diagonal: 0.6 },
     edge = true,
     alpha = 1,
+    paletteOpts = {},
   } = options
 
   // sensible default count based on PRNG (deterministic if your prng is)
@@ -29,8 +39,9 @@ const randomSolidRectangles = (canvas, options = {}) => {
     ? Math.max(1, Math.floor(options.numberOfRectangles))
     : defaultCount
 
-  // ensure palette has enough colors
-  const palette = selectPalette(Math.max(3, n))
+  // ensure palette has enough colors, convert to sRGB
+  const prophotoColors = selectPalette(Math.max(3, n), paletteOpts)
+  const palette = prophotoColors.map(prophotoToSRGB)
 
   // helper: pick a type using weighted PRNG
   const pickType = (w) => {
@@ -97,8 +108,12 @@ const randomSolidRectangles = (canvas, options = {}) => {
     // split counts for v/h
     const vCount = Math.max(1, Math.floor(n / 2))
     const hCount = Math.max(1, n - vCount)
-    const vPalette = selectPalette(Math.max(1, vCount))
-    const hPalette = selectPalette(Math.max(1, hCount))
+    
+    const vProphoto = selectPalette(Math.max(1, vCount), paletteOpts)
+    const vPalette = vProphoto.map(prophotoToSRGB)
+    
+    const hProphoto = selectPalette(Math.max(1, hCount), paletteOpts)
+    const hPalette = hProphoto.map(prophotoToSRGB)
 
     // vertical bands integer distribution
     const vBase = Math.floor(canvas.width / vCount) || 1
@@ -186,4 +201,3 @@ const randomSolidRectangles = (canvas, options = {}) => {
 }
 
 export default randomSolidRectangles
-    
