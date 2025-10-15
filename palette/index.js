@@ -1,65 +1,68 @@
-// color-oklab-palette.js
-// Uses your deterministic prng() to sample OKLab/OKLCh and convert to sRGB 0..255
-// Install Color.js (npm): `npm i colorjs.io`
-// Or use CDN in a browser module: `import Color from "https://colorjs.io/dist/color.js";`
-
+// color-oklch-prophoto.js
 import prng from '../prng/index.js'
-import Color from 'colorjs.io/src/color.js' // good for bundlers; or 'colorjs.io' / CDN as above
-
-// OKLab documented coordinate ranges in Color.js:
-//  L: 0..1, a: -0.4..0.4, b: -0.4..0.4
-// See Color.js spaces docs for OKLab/OKLCh. :contentReference[oaicite:3]{index=3}
+import Color from 'colorjs.io' // or 'colorjs.io/dist/color.js' for some bundlers
 
 const rand = (min, max) => min + prng() * (max - min)
+const clamp01 = v => Math.max(0, Math.min(1, v))
 
-const clamp01 = v => Math.min(1, Math.max(0, v))
-const srgbCoordsTo255 = (coords) => coords.map(c => Math.round(clamp01(c) * 255))
-
-// --- Simple OKLab sampler (may produce out-of-gamut colors; we map them below) ---
-export const randomOKLab = ({mapTo = 'srgb', gamutMap = true} = {}) => {
-  const L = rand(0, 1)
-  const a = rand(-0.4, 0.4)
-  const b = rand(-0.4, 0.4)
-
-  let col = new Color('oklab', [L, a, b])
-
-  if (gamutMap) {
-    // map into the target gamut (mutates clone) — safer than naive clipping.
-    col = col.clone().toGamut({space: mapTo})
-  }
-
-  const out = col.to(mapTo) // e.g. "srgb"
-  return srgbCoordsTo255(out.coords)
-}
-
-// --- Better: sample in OKLCh for controlled chroma & hue (prettier palettes) ---
-export const randomOKLCh = ({LRange = [0.15, 0.85], cMax = 0.32, mapTo = 'srgb', gamutMap = true} = {}) => {
-  // L: avoid extremes by default (too close to black or white). cMax is a conservative safe chroma.
+/**
+ * Sample a single OKLCh color and convert -> ProPhoto RGB.
+ * 
+ * options:
+ *  - LRange: [minL, maxL] (default [0.12, 0.9])
+ *  - cMax: conservative chroma ceiling (default 0.45) — increase if you know your target device supports it
+ *  - gamutMap: true|false (default true). When true, will map out-of-gamut OKLab colors into prophoto-rgb.
+ *  - as16bit: return 0..65535 integers when true; otherwise returns normalized floats 0..1
+ */
+export const randomOKLChToProPhoto = ({
+  LRange = [0.12, 0.88],
+  cMax = 0.45,
+  gamutMap = true,
+  as16bit = false,
+} = {}) => {
   const L = rand(LRange[0], LRange[1])
-  const C = prng() * cMax // linear chroma; you can bias distribution by Math.pow(prng(), 0.6) to favor lower chroma
+  // bias chroma distribution slightly towards lower values for more usable colors:
+  const C = Math.pow(prng(), 0.9) * cMax
   const h = rand(0, 360)
 
+  // create OKLCH color
   let col = new Color('oklch', [L, C, h])
 
-  if (gamutMap) col = col.clone().toGamut({space: mapTo})
+  // optionally map into prophoto-rgb gamut (recommended)
+  if (gamutMap) {
+    // toGamut mutates the color; pass the target space name
+    col = col.clone().toGamut({space: 'prophoto-rgb'})
+  }
 
-  const out = col.to(mapTo)
-  return srgbCoordsTo255(out.coords)
+  // convert to prophoto-rgb coordinates
+  const out = col.to('prophoto-rgb')
+  const coords = out.coords.map(clamp01) // ensure safe range [0..1]
+
+  if (as16bit) return coords.map(c => Math.round(c * 65535))
+  return coords // [r,g,b] floats 0..1
 }
 
-// --- API replacements to match your existing calls ---
-// selectPalette(size) -> returns array of [r,g,b]
-export const selectPalette = (size, {mode = 'oklch', options = {}} = {}) => {
-  const palette = []
+/**
+ * selectPalette(size, opts) -> returns array of prophoto colors
+ * opts forwarded to randomOKLChToProPhoto
+ */
+export const selectPalette = (size, opts = {}) => {
+  const palette = new Array(size)
   for (let i = 0; i < size; i++) {
-    if (mode === 'oklab') palette.push(randomOKLab(options))
-    else palette.push(randomOKLCh(options)) // default to OKLCh (more artist-friendly)
+    palette[i] = randomOKLChToProPhoto(opts)
   }
   return palette
 }
 
-// getRandomColor(palette) -> if palette provided pick from it, else sample from OKLCh
-export const getRandomColor = (palette) => {
-  if (!palette || palette.length === 0) return randomOKLCh()
+/**
+ * getRandomColor(palette, opts) -> if palette provided, pick deterministic entry,
+ * otherwise sample a fresh OKLCh -> ProPhoto color.
+ *
+ * If you want sRGB for display, convert the chosen color using Color.js:
+ *   new Color('prophoto-rgb', coords).to('srgb')
+ */
+export const getRandomColor = (palette, opts = {}) => {
+  if (!palette || palette.length === 0) return randomOKLChToProPhoto(opts)
   return palette[Math.trunc(prng() * palette.length)]
-    }
+}
+  
