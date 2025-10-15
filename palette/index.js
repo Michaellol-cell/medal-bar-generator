@@ -1,6 +1,6 @@
 // color-oklch-prophoto.js
 import prng from '../prng/index.js'
-import Color from 'colorjs.io' // or 'colorjs.io/dist/color.js' for some bundlers
+import Color from 'colorjs.io/dist/color.js' // or 'colorjs.io/dist/color.js' for some bundlers
 
 const rand = (min, max) => min + prng() * (max - min)
 const clamp01 = v => Math.max(0, Math.min(1, v))
