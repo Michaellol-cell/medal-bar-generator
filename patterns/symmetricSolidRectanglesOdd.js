@@ -1,61 +1,39 @@
 import { getRandomColor, selectPalette } from '../palette/index.js'
 import prng from '../prng/index.js'
 
-const distribute = (total, count) => {
-  const base = Math.floor(total / count);
-  const rem = total - base * count;
-  const arr = new Array(count).fill(base);
-  for (let i = 0; i < rem; i++) arr[i] += 1;
-  return arr;
-};
-
-const prefixPositions = (sizes) => {
-  const pos = new Array(sizes.length);
-  let acc = 0;
-  for (let i = 0; i < sizes.length; i++) {
-    pos[i] = acc;
-    acc += sizes[i];
-  }
-  return pos;
-};
-
 const symmetricSolidRectanglesOdd = (canvas, bandsEachSide = undefined) => {
   const ctx = canvas.getContext('2d')
 
+  // bandsEachSide = number of bands on *one side including the center*.
+  // totalBands = 2 * bandsEachSide - 1 (odd)
   const n = (typeof bandsEachSide === 'number' && bandsEachSide > 0)
     ? Math.floor(bandsEachSide)
-    : Math.max(2, Math.floor(2 + prng() * 3))
+    : Math.max(2, Math.floor(2 + prng() * 3)) // default 2..4 (=> total 3..7)
 
   const pairs = n - 1
   const totalBands = 2 * n - 1
-  // distribute widths so they sum exactly to canvas.width
-  const widths = distribute(canvas.width, totalBands)
-  const starts = prefixPositions(widths)
-
+  const bandWidth = Math.floor(canvas.width / totalBands) || 1
   const palette = selectPalette(Math.max(3, totalBands))
 
   // mirrored pairs
   for (let i = 0; i < pairs; i++) {
     const [r, g, b] = getRandomColor(palette)
-    const xLeft = starts[i]
-    const wLeft = widths[i]
-
-    const rightIndex = totalBands - 1 - i
-    const xRight = starts[rightIndex]
-    const wRight = widths[rightIndex]
+    const xLeft = i * bandWidth
+    const xRight = canvas.width - (i + 1) * bandWidth
 
     ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 1)`
-    ctx.fillRect(xLeft, 0, wLeft, canvas.height)
-    ctx.fillRect(xRight, 0, wRight, canvas.height)
+    ctx.fillRect(xLeft, 0, bandWidth, canvas.height)
+    ctx.fillRect(xRight, 0, bandWidth, canvas.height)
   }
 
-  // single center band (draw once)
+  // single center band (draw once and fill any remaining gap)
   const [cr, cg, cb] = getRandomColor(palette)
-  const centerIndex = pairs
+  const centerX = pairs * bandWidth
+  const centerWidth = canvas.width - (2 * pairs * bandWidth)
   ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, 1)`
-  ctx.fillRect(starts[centerIndex], 0, widths[centerIndex], canvas.height)
+  ctx.fillRect(centerX, 0, centerWidth, canvas.height)
 
-  return { type: 'symmetric-odd', bandsEachSide: n, bandWidth: widths[0] }
+  return { type: 'symmetric-odd', bandsEachSide: n, bandWidth }
 }
 
 export default symmetricSolidRectanglesOdd
